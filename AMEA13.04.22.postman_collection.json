@@ -1,0 +1,5320 @@
+{
+	"info": {
+		"_postman_id": "8bc6cef7-0623-41ab-bc6c-9bbba45785dc",
+		"name": "TestRail Api ( AMEA) 13.04.22",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Create issue in Jira",
+			"item": [
+				{
+					"name": "Create issue in Jira",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);\r",
+									"\r",
+									"pm.test(\"Issue is created\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"pm.collectionVariables.set(\"issueid\", jsonData.id);\r",
+									"pm.environmentV.set(\"Jira_issuekey\", jsonData.key);\r",
+									"pm.collectionVariables.set(\"issueself\", jsonData.self);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{jira_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{jira_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"fields\":\r\n    {\"project\": {\"key\": \"{{project_key}}\"},\r\n    \"priority\":{\"name\":\"{{name_priority}}\"},\r\n    \"{{team}}\":{\"name\":\"{{name_team}}\"},\r\n    \"{{story_points}}\":{\"name\":\"{{name_storyPoint}}\"},  \r\n    \"summary\": \"{{new_TR_name}}: run full regression testing\",\r\n    \"description\": {\r\n         \"type\": \"doc\",\r\n         \"version\": 1,\r\n         \"content\": [\r\n                { \"type\": \"paragraph\",\r\n                \"content\": [\r\n                    {\"text\": \"please see the report here:\",\r\n                     \"type\": \"text\"\r\n                    }  ]\r\n                }]},\r\n        \"{{acceptance_criteria}}\": {\r\n         \"type\": \"doc\",\r\n         \"version\": 1,\r\n         \"content\": [\r\n                { \"type\": \"paragraph\",\r\n                \"content\": [\r\n                    {\"text\": \"regression test is done, no critical issues are found\",\r\n                     \"type\": \"text\"\r\n                    }  ]\r\n                }]},\r\n    \"issuetype\": {\"name\": \"Task\"}\r\n        }\r\n    \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{jira_url}}/rest/api/3/issue",
+							"host": [
+								"{{jira_url}}"
+							],
+							"path": [
+								"rest",
+								"api",
+								"3",
+								"issue"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Get Case_ids with Regression type",
+			"item": [
+				{
+					"name": "Get Case_ids1 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases1 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases1.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids1\", idCases1);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID1}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID1}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID1}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids2 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases2 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases2.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids2\", idCases2);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID2}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID2}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID2}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids3 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases3 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases3.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids3\", idCases3);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID3}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID3}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID3}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids4 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases4 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases4.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids4\", idCases4);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID4}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID4}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID4}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids5 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases5 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"\r",
+									"\r",
+									"// тело запроса который мы повторяем \r",
+									"function getIds () {\r",
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID5}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};\r",
+									"\r",
+									"\r",
+									"\r",
+									"// этой функцией мы вызываем запрос res- это ответ, err - Ошибки.\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"jsondata = jsonData.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"if (jsonData.lenght === 250) { //если они равны мы должны увеличить number на 250\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующей операции\r",
+									"idCases5.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"getIds(); // перезапускаем функцию\r",
+									"}\r",
+									"})\r",
+									"};\r",
+									"getIds();\r",
+									"pm.collectionVariables.set(\"case_ids5\", idCases5);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID5}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID5}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID5}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids6 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases6 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases6.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids6\", idCases6);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID6}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID6}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID6}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids7 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases6 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases6.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids6\", idCases6);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID7}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID7}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID7}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids8 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases8 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases8.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids8\", idCases8);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID8}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID8}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID8}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids9 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases9 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases9.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids9\", idCases9);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID9}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID9}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID9}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids10 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases10 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases10.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids10\", idCases10);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID10}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID10}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID10}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids11 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases11 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases11.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids11\", idCases11);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID11}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID11}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID11}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids12 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases12 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases12.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids12\", idCases12);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID12}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID12}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID12}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids13 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases13 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases13.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids13\", idCases13);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID13}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID13}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID13}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids14 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases14 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases14.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids14\", idCases14);\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID14}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID14}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID14}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Case_ids15 with Regression type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Can see Cases list with Regression type\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"var cases = pm.response.json().cases; //Забираем поле cases\r",
+									"var idCases15 = []; //создаём массив\r",
+									"pm.collectionVariables.set(\"number\", 0); //переменная которая будет указывать кол-во id которое надо пропустить при повторе запроса (+ нам каждый раз когда запрос используется надо начинать с 0)\r",
+									"var next = null;\r",
+									"do {\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"next = jsondata._links.next;\r",
+									"jsondata = jsondata.cases; // приводим тело ответа в божеский вид\r",
+									"var idCases0 = [];\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"idCases0.push(jsondata[i].id); //Добавляем id каждого в массив\r",
+									"};\r",
+									"pm.collectionVariables.set = (\"number\", number + 250); // увеличиваем переменную для следующего цикла\r",
+									"idCases15.push(idCases0) // перекладываем текущее значение в результирующую переменную\r",
+									"});\r",
+									"} while (next != null)\r",
+									"pm.collectionVariables.set(\"case_ids15\", idCases15);\r",
+									"\r",
+									"\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"\r",
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/get_cases/{{projectID15}}&type_id={{RegressionID}}&offset={{number}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/get_cases/{{projectID15}}&type_id={{RegressionID}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"get_cases",
+								"{{projectID15}}&type_id={{RegressionID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Create new Runs",
+			"item": [
+				{
+					"name": "Create new Test Run 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName1}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids1}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID1}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID1}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName2}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids2}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID2}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID2}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 3",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName3}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids3}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID3}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID3}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 4",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName4}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids4}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID4}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID4}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 5",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName5}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids5}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID5}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID5}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 6",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName6}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids6}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID6}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID6}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 7",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName7}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids7}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID7}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID7}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 8",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName8}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids8}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID8}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID8}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 9",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName9}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids9}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID9}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID9}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 10",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName10}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids10}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID10}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID10}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 11",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName11}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids11}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID11}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID11}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 12",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName12}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids12}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID12}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID12}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 13",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName13}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids13}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID13}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID13}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 14",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName14}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids14}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID14}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID14}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new Test Run 15",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"New TestRun is added\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"{{new_TR_name}} {{projectName15}}\",\r\n    \"include_all\": false,\r\n    \"case_ids\": [{{case_ids15}}],\r\n    \"refs\": \"{{Jira_issuekey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{TR_url}}/add_run/{{projectID15}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"add_run",
+								"{{projectID15}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 1st Project",
+			"item": [
+				{
+					"name": "Get run_id1 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id1\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID1}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID1}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 1 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id1\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID1}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id1}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id1}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 2nd Project",
+			"item": [
+				{
+					"name": "Get run_id2 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id2\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID2}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID2}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 2 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id2\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID2}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id2}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id2}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 3ed Project",
+			"item": [
+				{
+					"name": "Get run_id3 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id3\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID3}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID3}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 3 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id3\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID3}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id3}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id3}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 4th Project",
+			"item": [
+				{
+					"name": "Get run_id4 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id4\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID4}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID4}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 4 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id4\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID4}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id4}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id4}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 5th Project",
+			"item": [
+				{
+					"name": "Get run_id5 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id5\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID5}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID5}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 5 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id5\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID5}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id5}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id5}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 6th Project",
+			"item": [
+				{
+					"name": "Get run_id6 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id6\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID6}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID6}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 6 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id6\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID6}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id6}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id6}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 7th Project",
+			"item": [
+				{
+					"name": "Get run_id7 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id7\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID7}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID7}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 7 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id7\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID7}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id7}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id7}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 8th Project",
+			"item": [
+				{
+					"name": "Get run_id8 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id8\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID8}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID8}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 8 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id8\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID8}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id8}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id8}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 9th Project",
+			"item": [
+				{
+					"name": "Get run_id9 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id9\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID9}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID9}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 9 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id9\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID9}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id9}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id9}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 10th Project",
+			"item": [
+				{
+					"name": "Get run_id10 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id10\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID10}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID10}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 10 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id10\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID10}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id10}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id10}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 11th Project",
+			"item": [
+				{
+					"name": "Get run_id11 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id11\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID11}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID11}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 11 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id11\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID11}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id11}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id11}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 12th Project",
+			"item": [
+				{
+					"name": "Get run_id12 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id12\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID12}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID12}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 12 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id12\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID12}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id12}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id12}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 13th Project",
+			"item": [
+				{
+					"name": "Get run_id13 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id13\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID13}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID13}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 13 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id13\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID13}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id13}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id13}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 14th Project",
+			"item": [
+				{
+					"name": "Get run_id14 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id14\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID14}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID14}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 14 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id14\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID14}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id14}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id14}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "For 15th Project",
+			"item": [
+				{
+					"name": "Get run_id15 for old_TR_name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsonData.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsonData[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id15\", jsonData.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/get_runs/{{projectID15}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/get_runs/{{projectID15}}",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Test Run 15 with old name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"TestRun is closed\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.sendRequest(echoGetRequest, function (err, res) {\r",
+									"let a = res.text();\r",
+									"let jsondata = JSON.parse(a);\r",
+									"var jsondata = pm.response.json().runs //Забираем поле runs\r",
+									"var old_TR_name = pm.environment.get(\"old_TR_name\");\r",
+									"\r",
+									"// перебираем элементы runs\r",
+									"for (var i = 0; i<jsondata.length; i++) {\r",
+									"    //сравниваем элементы с искомым\r",
+									"     if (jsondata[i].name.includes(old_TR_name)) {\r",
+									"    //если нашли совпадение, записываем в переменную\r",
+									"        pm.collectionVariables.set(\"run_id15\", jsondata.runs[i].id);\r",
+									"    };\r",
+									"};\r",
+									"pm.test(\"Can see Runs list\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const echoGetRequest = {\r",
+									"url: '{{TR_url}}/index.php?/api/v2/get_runs/{{projectID15}}', // переменная number показывает сколько элементов мы пропускаем от начала списка кейсов\r",
+									"\"auth\": {\r",
+									"\"type\": \"basic\",\r",
+									"\"basic\": [\r",
+									"{\r",
+									"\"key\": \"password\",\r",
+									"\"value\": \"{{TR_pass}}\",\r",
+									"\"type\": \"string\"\r",
+									"},\r",
+									"{\r",
+									"\"key\": \"username\",\r",
+									"\"value\": \"{{TR_user}}\",\r",
+									"\"type\": \"string\"\r",
+									"}\r",
+									"]\r",
+									"},\r",
+									"method: \"GET\",\r",
+									"header: {\r",
+									"key: \"Content-Type\",\r",
+									"name: \"Content-Type\",\r",
+									"value: \"application/json\",\r",
+									"type: \"text\",\r",
+									"},\r",
+									"body: {\r",
+									"}\r",
+									"};\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{TR_pass}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{TR_user}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{TR_url}}/index.php?/api/v2/close_run/{{run_id15}}",
+							"host": [
+								"{{TR_url}}"
+							],
+							"path": [
+								"index.php"
+							],
+							"query": [
+								{
+									"key": "/api/v2/close_run/{{run_id15}}",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "issueid",
+			"value": ""
+		},
+		{
+			"key": "issuekey",
+			"value": ""
+		},
+		{
+			"key": "issueself",
+			"value": ""
+		},
+		{
+			"key": "Case_type_name",
+			"value": ""
+		},
+		{
+			"key": "projectID",
+			"value": ""
+		},
+		{
+			"key": "case_ids",
+			"value": ""
+		}
+	]
+}
